@@ -112,5 +112,56 @@ def handler(event: dict, context) -> dict:
         users = [{'id': r[0], 'username': r[1], 'display_name': r[2]} for r in rows]
         return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'users': users})}
 
+    elif action == 'update_profile':
+        user_id = body.get('user_id')
+        display_name = body.get('display_name', '').strip()
+        username = body.get('username', '').strip().lower()
+
+        if not display_name or not username:
+            db.close()
+            return {'statusCode': 400, 'headers': cors, 'body': json.dumps({'error': 'Заполните все поля'})}
+
+        if len(username) < 3:
+            db.close()
+            return {'statusCode': 400, 'headers': cors, 'body': json.dumps({'error': 'Логин минимум 3 символа'})}
+
+        cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (username, user_id))
+        if cur.fetchone():
+            db.close()
+            return {'statusCode': 400, 'headers': cors, 'body': json.dumps({'error': 'Логин уже занят'})}
+
+        cur.execute("UPDATE users SET display_name = %s, username = %s WHERE id = %s", (display_name, username, user_id))
+        db.commit()
+        db.close()
+        return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'display_name': display_name, 'username': username})}
+
+    elif action == 'change_password':
+        user_id = body.get('user_id')
+        old_password = body.get('old_password', '')
+        new_password = body.get('new_password', '')
+
+        if len(new_password) < 6:
+            db.close()
+            return {'statusCode': 400, 'headers': cors, 'body': json.dumps({'error': 'Новый пароль минимум 6 символов'})}
+
+        cur.execute("SELECT password_hash FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            db.close()
+            return {'statusCode': 404, 'headers': cors, 'body': json.dumps({'error': 'Пользователь не найден'})}
+
+        stored = row[0]
+        salt, pw_hash = stored.split(':', 1)
+        check_hash, _ = hash_password(old_password, salt)
+        if check_hash != pw_hash:
+            db.close()
+            return {'statusCode': 401, 'headers': cors, 'body': json.dumps({'error': 'Неверный текущий пароль'})}
+
+        new_hash, new_salt = hash_password(new_password)
+        cur.execute("UPDATE users SET password_hash = %s WHERE id = %s", (f"{new_salt}:{new_hash}", user_id))
+        db.commit()
+        db.close()
+        return {'statusCode': 200, 'headers': cors, 'body': json.dumps({'ok': True})}
+
     db.close()
     return {'statusCode': 400, 'headers': cors, 'body': json.dumps({'error': 'Неизвестное действие'})}

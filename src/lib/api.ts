@@ -29,6 +29,12 @@ export const api = {
   getUsers: (user_id: number, search: string) =>
     call(AUTH_URL, { action: 'get_users', user_id, search }),
 
+  updateProfile: (user_id: number, display_name: string, username: string) =>
+    call(AUTH_URL, { action: 'update_profile', user_id, display_name, username }),
+
+  changePassword: (user_id: number, old_password: string, new_password: string) =>
+    call(AUTH_URL, { action: 'change_password', user_id, old_password, new_password }),
+
   getConversations: (user_id: number) =>
     call(MESSAGES_URL, { action: 'get_conversations', user_id }),
 

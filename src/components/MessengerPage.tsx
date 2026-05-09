@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { User, clearUser } from '@/lib/auth';
 import Icon from '@/components/ui/icon';
+import SettingsPage from '@/components/SettingsPage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -82,8 +83,10 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
-export default function MessengerPage({ user, onLogout }: Props) {
+export default function MessengerPage({ user: initialUser, onLogout }: Props) {
   const { canInstall, install } = useInstallPrompt();
+  const [user, setUser] = useState<User>(initialUser);
+  const [showSettings, setShowSettings] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -204,6 +207,7 @@ export default function MessengerPage({ user, onLogout }: Props) {
   }
 
   return (
+    <>
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Sidebar */}
       <div className={`${activeConv ? 'hidden md:flex' : 'flex'} w-full md:w-72 lg:w-80 flex-col border-r border-border bg-white`}>
@@ -230,6 +234,13 @@ export default function MessengerPage({ user, onLogout }: Props) {
               title="Новый чат"
             >
               <Icon name="PenSquare" size={16} />
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              title="Настройки"
+            >
+              <Icon name="Settings" size={16} />
             </button>
             <button
               onClick={logout}
@@ -408,5 +419,14 @@ export default function MessengerPage({ user, onLogout }: Props) {
         )}
       </div>
     </div>
+
+    {showSettings && (
+      <SettingsPage
+        user={user}
+        onClose={() => setShowSettings(false)}
+        onUserUpdate={u => setUser(u)}
+      />
+    )}
+    </>
   );
 }
