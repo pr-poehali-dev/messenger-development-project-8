@@ -1,14 +1,22 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { loadUser, User } from '@/lib/auth';
+import AuthPage from '@/components/AuthPage';
+import MessengerPage from '@/components/MessengerPage';
 
-const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
-      </div>
-    </div>
-  );
-};
+export default function Index() {
+  const [user, setUser] = useState<User | null>(null);
+  const [checked, setChecked] = useState(false);
 
-export default Index;
+  useEffect(() => {
+    setUser(loadUser());
+    setChecked(true);
+  }, []);
+
+  if (!checked) return null;
+
+  if (!user) {
+    return <AuthPage onAuth={u => setUser(u)} />;
+  }
+
+  return <MessengerPage user={user} onLogout={() => setUser(null)} />;
+}

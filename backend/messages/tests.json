@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get conversations",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "get_conversations", "user_id": 1},
+      "expectedStatus": 200,
+      "expectedBody": {"conversations": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

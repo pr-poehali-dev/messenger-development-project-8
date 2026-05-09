@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Register new user",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "register", "username": "testuser1", "display_name": "Test User", "password": "password123"},
+      "expectedStatus": 200,
+      "expectedBody": {"username": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login user",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login", "username": "testuser1", "password": "password123"},
+      "expectedStatus": 200,
+      "expectedBody": {"user_id": 0},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
