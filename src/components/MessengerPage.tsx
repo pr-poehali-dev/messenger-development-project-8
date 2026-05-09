@@ -38,6 +38,7 @@ interface Conversation {
   username: string;
   last_message: string | null;
   last_time: string | null;
+  avatar_url?: string | null;
 }
 
 interface Message {
@@ -53,6 +54,7 @@ interface SearchUser {
   id: number;
   username: string;
   display_name: string;
+  avatar_url?: string | null;
 }
 
 interface Props {
@@ -69,10 +71,17 @@ function formatTime(iso: string | null) {
   return d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
 }
 
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+function Avatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl?: string | null; size?: number }) {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
   const color = colors[name.charCodeAt(0) % colors.length];
+  if (avatarUrl) {
+    return (
+      <div style={{ width: size, height: size }} className="rounded-full overflow-hidden flex-shrink-0">
+        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
   return (
     <div
       style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.35 }}
@@ -214,7 +223,7 @@ export default function MessengerPage({ user: initialUser, onLogout }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
-            <Avatar name={user.display_name} size={32} />
+            <Avatar name={user.display_name} avatarUrl={user.avatar_url} size={32} />
             <span className="text-sm font-medium text-foreground truncate max-w-[120px]">{user.display_name}</span>
           </div>
           <div className="flex items-center gap-1">
@@ -274,7 +283,7 @@ export default function MessengerPage({ user: initialUser, onLogout }: Props) {
                     onClick={() => openConversation(u.id, u)}
                     className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-secondary transition-colors text-left"
                   >
-                    <Avatar name={u.display_name} size={28} />
+                    <Avatar name={u.display_name} avatarUrl={u.avatar_url} size={28} />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{u.display_name}</p>
                       <p className="text-xs text-muted-foreground">@{u.username}</p>
@@ -312,7 +321,7 @@ export default function MessengerPage({ user: initialUser, onLogout }: Props) {
                   activeConv?.id === conv.id ? 'bg-secondary' : ''
                 }`}
               >
-                <Avatar name={conv.display_name} size={40} />
+                <Avatar name={conv.display_name} avatarUrl={conv.avatar_url} size={40} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground truncate">{conv.display_name}</span>
@@ -348,7 +357,7 @@ export default function MessengerPage({ user: initialUser, onLogout }: Props) {
               >
                 <Icon name="ChevronLeft" size={20} />
               </button>
-              <Avatar name={activeConv.display_name} size={36} />
+              <Avatar name={activeConv.display_name} avatarUrl={activeConv.avatar_url} size={36} />
               <div>
                 <p className="text-sm font-medium text-foreground">{activeConv.display_name}</p>
                 <p className="text-xs text-muted-foreground">@{activeConv.username}</p>

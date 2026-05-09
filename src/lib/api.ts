@@ -20,8 +20,8 @@ async function call(url: string, body: object) {
 }
 
 export const api = {
-  register: (username: string, display_name: string, password: string) =>
-    call(AUTH_URL, { action: 'register', username, display_name, password }),
+  register: (username: string, display_name: string, password: string, avatar_b64?: string, avatar_mime?: string) =>
+    call(AUTH_URL, { action: 'register', username, display_name, password, avatar_b64, avatar_mime }),
 
   login: (username: string, password: string) =>
     call(AUTH_URL, { action: 'login', username, password }),
@@ -29,8 +29,8 @@ export const api = {
   getUsers: (user_id: number, search: string) =>
     call(AUTH_URL, { action: 'get_users', user_id, search }),
 
-  updateProfile: (user_id: number, display_name: string, username: string) =>
-    call(AUTH_URL, { action: 'update_profile', user_id, display_name, username }),
+  updateProfile: (user_id: number, display_name: string, username: string, avatar_b64?: string, avatar_mime?: string) =>
+    call(AUTH_URL, { action: 'update_profile', user_id, display_name, username, avatar_b64, avatar_mime }),
 
   changePassword: (user_id: number, old_password: string, new_password: string) =>
     call(AUTH_URL, { action: 'change_password', user_id, old_password, new_password }),

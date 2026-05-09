@@ -3,6 +3,7 @@ export interface User {
   username: string;
   display_name: string;
   token: string;
+  avatar_url?: string;
 }
 
 const KEY = 'messenger_user';

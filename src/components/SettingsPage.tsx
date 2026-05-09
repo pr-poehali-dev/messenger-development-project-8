@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { User, saveUser } from '@/lib/auth';
 import Icon from '@/components/ui/icon';
+import AvatarPicker from '@/components/AvatarPicker';
 
 interface Props {
   user: User;
@@ -13,12 +14,10 @@ type Tab = 'profile' | 'password' | 'appearance' | 'notifications';
 
 function useTheme() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
-
   return { dark, setDark };
 }
 
@@ -54,9 +53,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={onChange}
       className={`relative w-10 h-6 rounded-full transition-colors duration-200 focus:outline-none ${checked ? 'bg-primary' : 'bg-border'}`}
     >
-      <span
-        className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-1'}`}
-      />
+      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
     </button>
   );
 }
@@ -68,6 +65,8 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
 
   const [displayName, setDisplayName] = useState(user.display_name);
   const [username, setUsername] = useState(user.username);
+  const [avatarB64, setAvatarB64] = useState<string | undefined>();
+  const [avatarMime, setAvatarMime] = useState<string | undefined>();
   const [profileMsg, setProfileMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -81,14 +80,21 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
     e.preventDefault();
     setProfileMsg(null);
     setProfileLoading(true);
-    const data = await api.updateProfile(user.user_id, displayName, username);
+    const data = await api.updateProfile(user.user_id, displayName, username, avatarB64, avatarMime);
     setProfileLoading(false);
     if (data.error) {
       setProfileMsg({ text: data.error, ok: false });
     } else {
-      const updated = { ...user, display_name: data.display_name, username: data.username };
+      const updated: User = {
+        ...user,
+        display_name: data.display_name,
+        username: data.username,
+        avatar_url: data.avatar_url ?? user.avatar_url,
+      };
       saveUser(updated);
       onUserUpdate(updated);
+      setAvatarB64(undefined);
+      setAvatarMime(undefined);
       setProfileMsg({ text: 'Профиль обновлён', ok: true });
     }
   }
@@ -119,7 +125,10 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-slide-up">
 
         {/* Header */}
@@ -150,21 +159,21 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
           </div>
 
           {/* Content */}
-          <div className="flex-1 p-6 min-h-[320px]">
+          <div className="flex-1 p-6 min-h-[340px]">
 
             {/* Profile */}
             {tab === 'profile' && (
               <form onSubmit={saveProfile} className="space-y-4 animate-fade-in">
-                <div className="flex items-center gap-3 mb-5">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-semibold flex-shrink-0"
-                    style={{ backgroundColor: ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444','#6366F1'][user.display_name.charCodeAt(0) % 6] }}
-                  >
-                    {user.display_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{user.display_name}</p>
-                    <p className="text-xs text-muted-foreground">@{user.username}</p>
+                {/* Avatar */}
+                <div className="flex justify-center pb-2">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <AvatarPicker
+                      name={displayName || user.display_name}
+                      currentUrl={user.avatar_url}
+                      size={72}
+                      onChange={(b64, mime) => { setAvatarB64(b64); setAvatarMime(mime); }}
+                    />
+                    <span className="text-xs text-muted-foreground">Нажмите, чтобы сменить фото</span>
                   </div>
                 </div>
 
@@ -173,19 +182,24 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
                   <input
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
+                    placeholder="Ваше имя"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">Логин</label>
-                  <input
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                    required
-                  />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">Никнейм</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                    <input
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      placeholder="username"
+                      className="w-full pl-7 pr-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      required
+                    />
+                  </div>
                 </div>
 
                 {profileMsg && (
@@ -201,7 +215,7 @@ export default function SettingsPage({ user, onClose, onUserUpdate }: Props) {
                   className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {profileLoading && <Icon name="Loader2" size={14} className="animate-spin" />}
-                  Сохранить
+                  Сохранить изменения
                 </button>
               </form>
             )}
