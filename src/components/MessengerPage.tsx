@@ -3,6 +3,33 @@ import { api } from '@/lib/api';
 import { User, clearUser } from '@/lib/auth';
 import Icon from '@/components/ui/icon';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+function useInstallPrompt() {
+  const [prompt, setPrompt] = useState<Event | null>(null);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => setInstalled(true));
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const install = async () => {
+    if (!prompt) return;
+    (prompt as BeforeInstallPromptEvent).prompt();
+    const { outcome } = await (prompt as BeforeInstallPromptEvent).userChoice;
+    if (outcome === 'accepted') setInstalled(true);
+    setPrompt(null);
+  };
+
+  return { canInstall: !!prompt && !installed, install };
+}
+
 interface Conversation {
   id: number;
   other_user_id: number;
@@ -56,6 +83,7 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
 }
 
 export default function MessengerPage({ user, onLogout }: Props) {
+  const { canInstall, install } = useInstallPrompt();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -186,6 +214,16 @@ export default function MessengerPage({ user, onLogout }: Props) {
             <span className="text-sm font-medium text-foreground truncate max-w-[120px]">{user.display_name}</span>
           </div>
           <div className="flex items-center gap-1">
+            {canInstall && (
+              <button
+                onClick={install}
+                className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 active:scale-95 transition-all"
+                title="Установить приложение на ПК"
+              >
+                <Icon name="Download" size={13} />
+                <span>Скачать</span>
+              </button>
+            )}
             <button
               onClick={() => setShowSearch(!showSearch)}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${showSearch ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
